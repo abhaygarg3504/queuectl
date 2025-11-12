@@ -20,7 +20,7 @@
 
 - Node.js (v14 or higher)
 - MongoDB (v4.0 or higher)
-- npm or yarn
+- npm 
 
 ## 🚀 Quick Start
 

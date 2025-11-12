@@ -419,10 +419,6 @@ node bin/queuectl.js status
 - [ ] Job dependencies and workflows
 - [ ] Rate limiting per job type
 
-## 📝 License
-
-MIT License - feel free to use this project for learning or production use.
-
 ## 👤 Author
 
 Created as part of a technical assessment to demonstrate:

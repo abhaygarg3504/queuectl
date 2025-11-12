@@ -2,7 +2,6 @@
 
 [![Node.js](https://img.shields.io/badge/Node.js-v14+-green.svg)](https://nodejs.org/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-v4.0+-brightgreen.svg)](https://www.mongodb.com/)
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 > A production-grade CLI-based background job queue system built with Node.js and MongoDB. QueueCTL manages background jobs with worker processes, handles automatic retries using exponential backoff, and maintains a Dead Letter Queue (DLQ) for permanently failed jobs.
 

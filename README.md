@@ -1,432 +1,247 @@
-A production-grade, CLI-based background job queue system with worker management, automatic retries using exponential backoff, and a Dead Letter Queue (DLQ) for failed jobs.
-🚀 Features
-✅ Job Queue Management - Enqueue and process background jobs
-✅ Multiple Workers - Run parallel worker processes
-✅ Automatic Retry - Exponential backoff for failed jobs
-✅ Dead Letter Queue - Permanently failed jobs isolation
-✅ Persistent Storage - MongoDB for data persistence
-✅ Job Locking - Prevents duplicate processing
-✅ Graceful Shutdown - Workers finish current jobs before stopping
-✅ Live Dashboard - Real-time monitoring (Bonus!)
-✅ Configuration Management - Adjustable retry and backoff settings
-✅ CLI Interface - Easy-to-use command-line tools
+QueueCTL - Background Job Queue System
+A production-grade CLI-based background job queue system built with Node.js and MongoDB. QueueCTL manages background jobs with worker processes, handles automatic retries using exponential backoff, and maintains a Dead Letter Queue (DLQ) for permanently failed jobs.
+✨ Features
 
-📋 Table of Contents
+🚀 Job Enqueueing - Add jobs via CLI with custom configurations
+👷 Multiple Workers - Run parallel workers for concurrent job processing
+🔄 Automatic Retry - Exponential backoff retry mechanism for failed jobs
+💀 Dead Letter Queue - Isolate permanently failed jobs after max retries
+💾 Persistent Storage - MongoDB-based storage survives restarts
+📊 Live Dashboard - Real-time monitoring of queue statistics
+⚙️ Configuration Management - Customize retry count and backoff parameters
+🎯 Graceful Shutdown - Workers finish current jobs before stopping
 
-Prerequisites
-Installation
-Quick Start
-Usage
-Architecture
-Configuration
-Testing
-Troubleshooting
-Design Decisions
+📋 Requirements
 
-
-🔧 Prerequisites
-
-Node.js >= 14.0.0
-MongoDB >= 4.0 (running locally or remote)
+Node.js (v14 or higher)
+MongoDB (v4.0 or higher)
 npm or yarn
-
-
-📦 Installation
-1. Clone the Repository
-bashgit clone https://github.com/YOUR_USERNAME/queuectl.git
+🚀 Quick Start
+1. Installation
+# Clone the repository
+git clone https://github.com/yourusername/queuectl.git
 cd queuectl
-2. Install Dependencies
-bashnpm install
-3. Setup Environment Variables
-bashcp .env.example .env
+# Install dependencies
+npm install
+# Create .env file
+cp .env.example .env
+2. Configure MongoDB
 Edit .env file:
-env# MongoDB Connection
-MONGODB_URI=mongodb://localhost:27017/queuectl
-
-# Logging
+MONGODB_URI=mongodb://localhost:27017/queuectl || mongodb compass url
 LOG_LEVEL=info
-
-# Worker Configuration (Optional - can be set via CLI)
-DEFAULT_MAX_RETRIES=3
-DEFAULT_BACKOFF_BASE=2
-4. Start MongoDB
-bash# If using local MongoDB
-mongod --dbpath /path/to/data/directory
-
-# Or using Docker
-docker run -d -p 27017:27017 --name mongodb mongo:latest
-5. Make CLI Executable (Optional)
-bashnpm link
-# Now you can use 'queuectl' directly instead of 'node bin/queuectl.js'
-
-⚡ Quick Start
-1. Start Workers
-bash# Start 3 workers
-node bin/queuectl.js worker start -c 3
-2. Add Jobs (in another terminal)
-bash# Simple command
-node scripts/add-job.js "echo Hello World"
-
-# Or use CLI
-node bin/queuectl.js enqueue "echo Test Job"
-3. Monitor Queue
-bash# View status
+3. Start MongoDB
+# Linux/Mac
+mongod
+# Windows
+net start MongoDB
+4. Run Your First Job
+# Add a job
+node bin/queuectl.js enqueue "echo Hello World"
+# Start a worker
+node bin/queuectl.js worker start
+# Check status
 node bin/queuectl.js status
-
-# Or use live dashboard
-node scripts/dashboard.js
-
-📖 Usage
-Job Management
+📖 Usage Guide
+Core Commands
 Enqueue a Job
-bash# Method 1: Using helper script (Recommended - avoids JSON escaping issues)
-node scripts/add-job.js "echo Hello World"
-
-# Method 2: Using CLI with JSON
-node bin/queuectl.js enqueue '{"command":"echo test","max_retries":5}'
-
-# Method 3: Direct command via CLI
-node bin/queuectl.js enqueue "curl https://api.example.com"
-List Jobs
-bash# List all jobs
+# Simple command
+node bin/queuectl.js enqueue "echo Hello World"
+# Using helper script (recommended)
+node scripts/add-job.js "echo Testing QueueCTL"
+# With custom max retries
+node scripts/add-job-json.js "curl https://api.example.com" 5
+Manage Workers
+# Start single worker
+node bin/queuectl.js worker start
+# Start multiple workers
+node bin/queuectl.js worker start --count 3
+# Stop all workers
+node bin/queuectl.js worker stop
+View Status
+# Queue statistics
+node bin/queuectl.js status
+# List all jobs
 node bin/queuectl.js list
-
-# Filter by state
+# List by state
 node bin/queuectl.js list --state pending
 node bin/queuectl.js list --state completed
 node bin/queuectl.js list --state failed
-Check Status
-bashnode bin/queuectl.js status
-Example Output:
-📊 Queue Status
-
-Pending:     5
-Processing:  2
-Completed:   8
-Failed:      1
-Dead (DLQ):  4
-
-Active Workers: 3
-
-Worker Management
-Start Workers
-bash# Start 1 worker (default)
-node bin/queuectl.js worker start
-
-# Start multiple workers
-node bin/queuectl.js worker start -c 5
-Stop Workers
-bashnode bin/queuectl.js worker stop
-Note: Workers will finish their current jobs before stopping (graceful shutdown).
-
-Dead Letter Queue (DLQ)
-List DLQ Jobs
-bashnode bin/queuectl.js dlq list
-Retry a Specific Job
-bashnode bin/queuectl.js dlq retry <job-id>
-Retry All DLQ Jobs
-bashnode scripts/retry-all-dlq.js
-
+Dead Letter Queue Management
+# View DLQ jobs
+node bin/queuectl.js dlq list
+# Retry specific job
+node bin/queuectl.js dlq retry <job-id>
+# Retry all DLQ jobs
+node scripts/retry-all-dlq.js
 Configuration
-Set Configuration
-bash# Set max retries
+# Set max retries
 node bin/queuectl.js config set max-retries 5
-
-# Set backoff base (exponential backoff: base^attempts seconds)
-node bin/queuectl.js config set backoff-base 3
-View Configuration
-bashnode bin/queuectl.js config list
+# Set backoff base
+node bin/queuectl.js config set backoff-base 2
+# List all configuration
+node bin/queuectl.js config list
 
 Helper Scripts
-Live Dashboard (Bonus Feature!)
-bashnode scripts/dashboard.js
-Dashboard Features:
+Live Dashboard
+node scripts/dashboard.js
+Real-time monitoring with:
 
-Real-time queue statistics
-Active worker status
-Pending jobs preview
+Queue statistics (pending, processing, completed, failed, dead)
+Active workers and their status
+Recent pending jobs
 Auto-refresh every 2 seconds
-
 Test Suite
-bashnode scripts/test-queue.js
-Adds 5 test jobs including:
+node scripts/test-queue.js
+Adds test jobs to verify:
 
-✅ Simple echo commands
-✅ Multiple commands
-✅ Delayed execution
-✅ Intentional failure (for retry testing)
-
+Simple commands
+Multiple commands
+Custom retry counts
+Delayed execution
+Intentional failures
 
 🏗️ Architecture
-System Overview
+System Components
 ┌─────────────┐
-│   CLI       │ ← User interacts via command line
+│   CLI       │ ← User Interface
 └──────┬──────┘
        │
-       ▼
-┌─────────────────────────────────────┐
-│   Job Manager Service               │
-│   - Enqueue jobs                    │
-│   - Get statistics                  │
-│   - Manage DLQ                      │
-└──────┬──────────────────────────────┘
+┌──────▼──────────────────────────┐
+│   Job Manager                   │
+│   - Enqueue jobs                │
+│   - Query statistics            │
+│   - DLQ management              │
+└──────┬──────────────────────────┘
        │
-       ▼
-┌─────────────────────────────────────┐
-│   MongoDB (Persistent Storage)      │
-│   - Jobs Collection                 │
-│   - Workers Collection              │
-│   - Config Collection               │
-└──────┬──────────────────────────────┘
+┌──────▼──────────────────────────┐
+│   MongoDB Storage               │
+│   - Jobs Collection             │
+│   - Workers Collection          │
+│   - Config Collection           │
+└──────┬──────────────────────────┘
        │
-       ▼
-┌─────────────────────────────────────┐
-│   Worker Manager Service            │
-│   - Spawn worker processes          │
-│   - Monitor heartbeats              │
-│   - Graceful shutdown               │
-└──────┬──────────────────────────────┘
-       │
-       ▼
-┌─────────────────────────────────────┐
-│   Worker Processes (Multiple)       │
-│   1. Poll for pending jobs          │
-│   2. Lock job (prevent duplicates)  │
-│   3. Execute command                │
-│   4. Handle success/failure         │
-│   5. Update job state               │
-└─────────────────────────────────────┘
+┌──────▼──────────────────────────┐
+│   Worker Processes              │
+│   - Poll for jobs               │
+│   - Execute commands            │
+│   - Handle retries              │
+└─────────────────────────────────┘
+
 Job Lifecycle
-┌─────────┐
-│ PENDING │ ← Job created
-└────┬────┘
-     │
-     ▼
-┌────────────┐
-│ PROCESSING │ ← Worker locked job
-└─────┬──────┘
+PENDING
       │
-      ├─── Success ──→ ┌───────────┐
-      │                │ COMPLETED │
-      │                └───────────┘
-      │
-      └─── Failure ──→ ┌────────┐
-                       │ FAILED │
-                       └────┬───┘
-                            │
-                            ├─── Retry Available ──→ (Wait with exponential backoff)
-                            │                         └──→ Back to PENDING
-                            │
-                            └─── Max Retries Exceeded ──→ ┌──────┐
-                                                          │ DEAD │ (DLQ)
-                                                          └──────┘
-Exponential Backoff Formula
-delay_seconds = backoff_base ^ attempts
+      ▼
+  PROCESSING ──┐
+      │        │
+      │        │ (failure)
+      ▼        ▼
+  COMPLETED  FAILED
+               │
+               │ (retry)
+               ├────────► PENDING
+               │
+               │ (max retries)
+               ▼
+             DEAD (DLQ)
 
-Examples (backoff_base = 2):
+Data Models
+Job Schema
+
+{
+  id: String,           // Unique job identifier
+  command: String,      // Command to execute
+  state: String,        // pending|processing|completed|failed|dead
+  attempts: Number,     // Current attempt count
+  max_retries: Number,  // Maximum retry attempts
+  locked_by: String,    // Worker ID holding lock
+  locked_at: Date,      // Lock timestamp
+  next_retry_at: Date,  // Next retry time (for failed jobs)
+  last_error: String,   // Last error message
+  created_at: Date,     // Creation timestamp
+  updated_at: Date      // Last update timestamp
+}
+
+Worker Schema
+{
+  id: String,           // Unique worker identifier
+  status: String,       // active|stopped
+  current_job: String,  // Currently processing job ID
+  last_heartbeat: Date, // Last heartbeat timestamp
+  started_at: Date      // Worker start time
+}
+
+Retry Logic
+Exponential Backoff Formula:
+delay = backoff_base ^ attempts (in seconds)
+
+Example with backoff_base = 2:
 - Attempt 1: 2^1 = 2 seconds
-- Attempt 2: 2^2 = 4 seconds  
+- Attempt 2: 2^2 = 4 seconds
 - Attempt 3: 2^3 = 8 seconds
-Job Locking Mechanism
-To prevent duplicate processing:
+Concurrency Control
 
-Worker queries for pending jobs with locked_by = null
-Worker attempts atomic update: set locked_by = worker_id
-If update succeeds, worker processes job
-If update fails, another worker already locked it
+Job Locking: Uses MongoDB atomic operations to prevent duplicate processing
+Heartbeat System: Workers send heartbeat every 30 seconds
+Stale Job Recovery: Jobs locked for >10 minutes are automatically released
+Graceful Shutdown: Workers finish current job before stopping
 
-Stale Job Detection
-
-Jobs locked for > 10 minutes are automatically released
-Marked as failed to trigger retry logic
-Prevents worker crashes from permanently blocking jobs
-
-
-⚙️ Configuration
-Configurable Parameters
-ParameterDefaultDescriptionmax-retries3Maximum retry attempts before DLQbackoff-base2Base for exponential backoff calculation
-Environment Variables
-VariableRequiredDefaultDescriptionMONGODB_URI✅ Yesmongodb://localhost:27017/queuectlMongoDB connection stringLOG_LEVELNoinfoLogging level (debug, info, warn, error)
 
 🧪 Testing
-Automated Test Suite
-bashnode scripts/test-queue.js
-This creates 5 test jobs covering:
-
-✅ Basic command execution
-✅ Multiple chained commands
-✅ Custom retry configuration
-✅ Delayed execution
-✅ Intentional failure (for retry/DLQ testing)
-
-Manual Testing Scenarios
-Test 1: Basic Job Completion
-bash# Terminal 1: Start worker
-node bin/queuectl.js worker start
-
-# Terminal 2: Add job
-node scripts/add-job.js "echo Success"
-
-# Terminal 3: Check status
-node bin/queuectl.js status
-# Expected: 1 completed job
-Test 2: Retry with Backoff
-bash# Add a job that will fail
-node scripts/add-job.js "non-existent-command"
-
-# Watch logs to see retry attempts with increasing delays
-# After 3 attempts, job moves to DLQ
-Test 3: Multiple Workers (No Duplication)
-bash# Start 3 workers
-node bin/queuectl.js worker start -c 3
-
-# Add 10 jobs
-for i in {1..10}; do
-  node scripts/add-job.js "echo Job $i"
-done
-
-# Verify: Each job processed exactly once
-node bin/queuectl.js list --state completed
-Test 4: Persistence Across Restarts
-bash# Add jobs
+Manual Testing
+# 1. Add test jobs
 node scripts/test-queue.js
-
-# Stop workers
-node bin/queuectl.js worker stop
-
-# Restart workers
-node bin/queuectl.js worker start -c 2
-
-# Verify: Jobs resume processing
-Test 5: DLQ Operations
-bash# Create failing job
-node scripts/add-job.js "fail-command"
-
-# Wait for it to reach DLQ (after 3 retries)
-
-# List DLQ
+# 2. Start workers in new terminal
+node bin/queuectl.js worker start --count 2
+# 3. Monitor with dashboard
+node scripts/dashboard.js
+# 4. Check results
+node bin/queuectl.js status
 node bin/queuectl.js dlq list
 
-# Retry job
-node bin/queuectl.js dlq retry <job-id>
+Test Scenarios Covered
 
-🐛 Troubleshooting
-MongoDB Connection Issues
-Problem: Failed to connect to MongoDB
-Solutions:
+✅ Basic Success - Simple echo commands complete successfully
+✅ Multiple Commands - Chained commands execute properly
+✅ Custom Retries - Jobs with custom max_retries work correctly
+✅ Exponential Backoff - Failed jobs retry with increasing delays
+✅ DLQ Movement - Jobs move to DLQ after max retries exhausted
+✅ Concurrent Workers - Multiple workers process different jobs
+✅ Graceful Shutdown - Workers finish jobs before stopping
+✅ Persistence - Jobs survive system restarts
+✅ Stale Jobs - Locked jobs are released after timeout
 
-Check if MongoDB is running: mongosh or mongo
-Verify MONGODB_URI in .env
-Check firewall/network access
-Try: mongodb://127.0.0.1:27017/queuectl instead of localhost
+Current Test Results
+Based on testing:
+✅ 8 jobs completed successfully
+✅ 4 jobs in Dead Letter Queue (after retry exhaustion)
+✅ Multiple workers running concurrently
+✅ All CLI commands functional
 
-Workers Not Processing Jobs
-Problem: Jobs stuck in pending state
-Solutions:
-
-Check worker status: node bin/queuectl.js status
-View logs for errors
-Restart workers:
-
-bash   node bin/queuectl.js worker stop
-   node bin/queuectl.js worker start -c 3
-JSON Parsing Errors
-Problem: SyntaxError: Unexpected token when enqueuing
-Solution: Use helper script to avoid shell escaping issues:
-bashnode scripts/add-job.js "your command here"
-Jobs Not Retrying
-Problem: Failed jobs not retrying
-Check:
-
-Verify max_retries: node bin/queuectl.js config list
-Check job attempts vs max_retries: node bin/queuectl.js list --state failed
-View next_retry_at timestamp in database
-
-
-🤔 Design Decisions & Trade-offs
-Technology Choices
-MongoDB over SQLite
-
-✅ Better for production: Handles concurrent writes efficiently
-✅ Native atomic operations: Crucial for job locking
-✅ Scalability: Easy to add multiple worker servers
-❌ Setup complexity: Requires running MongoDB server
-
-Separate Worker Processes over Threads
-
-✅ Isolation: One worker crash doesn't affect others
-✅ True parallelism: Not limited by Node.js single-threaded nature
-✅ Easier debugging: Each worker has its own logs
-❌ More memory: Each process has overhead
-
-Assumptions
-
-Command execution timeout: 5 minutes (300 seconds)
-Stale job timeout: 10 minutes (releases stuck jobs)
-Worker heartbeat interval: 30 seconds
-Job polling interval: 2 seconds
-Commands are shell-executable: Uses exec() for maximum flexibility
-
-Security Considerations
-⚠️ Warning: This system executes arbitrary shell commands. In production:
-
-Implement command whitelisting
-Validate/sanitize all inputs
-Run workers with limited permissions
-Consider using Docker containers for job isolation
-
-Simplifications
-
-No authentication: MongoDB connection unprotected
-No job priority: FIFO processing
-No scheduled jobs: All jobs run immediately when pending
-No output persistence: Job stdout/stderr not stored long-term
-
-Scalability Considerations
-Current Capacity:
-
-✅ Handles hundreds of jobs/minute
-✅ Supports 10-20 concurrent workers efficiently
-✅ Tested with 1000+ jobs in queue
-
-Scaling Beyond:
-
-Add MongoDB replica set for HA
-Implement job sharding by type/priority
-Add Redis for faster job polling
-Use message queue (RabbitMQ/Kafka) for high throughput
-
-
-📁 Project Structure
+📂 Project Structure
 queuectl/
 ├── bin/
-│   └── queuectl.js           # CLI entry point
-├── scripts/
-│   ├── add-job.js            # Helper: Add jobs easily
-│   ├── add-job-json.js       # Helper: Add jobs with custom retries
-│   ├── dashboard.js          # Live monitoring dashboard
-│   ├── retry-all-dlq.js      # Retry all DLQ jobs
-│   └── test-queue.js         # Test suite
+│   └── queuectl.js           # Main CLI entry point
 ├── src/
 │   ├── cli/
-│   │   ├── commands/
-│   │   │   ├── config.js     # Config management commands
-│   │   │   ├── dlq.js        # DLQ commands
-│   │   │   ├── enqueue.js    # Job enqueue command
-│   │   │   ├── list.js       # List jobs command
-│   │   │   ├── status.js     # Status command
-│   │   │   └── worker.js     # Worker commands
+│   │   ├── commands/         # CLI command implementations
+│   │   │   ├── enqueue.js
+│   │   │   ├── worker.js
+│   │   │   ├── status.js
+│   │   │   ├── list.js
+│   │   │   ├── dlq.js
+│   │   │   └── config.js
 │   │   └── index.js          # CLI setup
 │   ├── models/
-│   │   ├── job.js            # Job schema
-│   │   └── worker.js         # Worker schema
+│   │   ├── job.js            # Job Mongoose model
+│   │   ├── worker.js         # Worker Mongoose model
+│   │   └── config.js         # Config Mongoose model
 │   ├── services/
-│   │   ├── configmanager.js  # Config management
-│   │   ├── executor.js       # Command execution
-│   │   ├── jobmanager.js     # Job lifecycle management
-│   │   └── workermanager.js  # Worker lifecycle management
+│   │   ├── jobmanager.js     # Job management logic
+│   │   ├── workermanager.js  # Worker management logic
+│   │   ├── configmanager.js  # Configuration management
+│   │   └── executor.js       # Command execution
 │   ├── storage/
-│   │   ├── db.js             # MongoDB connection
+│   │   ├── db.js             # Database connection
 │   │   ├── jobRepo.js        # Job repository
 │   │   └── workerRepo.js     # Worker repository
 │   ├── utils/
@@ -434,54 +249,80 @@ queuectl/
 │   │   └── retry.js          # Retry logic
 │   └── worker/
 │       ├── constants.js      # Worker constants
-│       └── worker-process.js # Worker process script
+│       └── worker-process.js # Worker process logic
+├── scripts/
+│   ├── dashboard.js          # Live monitoring dashboard
+│   ├── test-queue.js         # Test suite
+│   ├── add-job.js            # Helper to add jobs
+│   ├── add-job-json.js       # Add jobs with JSON
+│   └── retry-all-dlq.js      # Retry all DLQ jobs
 ├── .env.example              # Environment template
-├── .gitignore
-├── package.json
-└── README.md
+├── package.json              # Dependencies
+└── README.md                 # This file
 
-📊 Performance Metrics
-From testing with 100 jobs and 3 workers:
-MetricValueAverage job completion time~500msJobs processed per minute~180Failed job retry delay (1st)2 secondsFailed job retry delay (2nd)4 secondsFailed job retry delay (3rd)8 secondsWorker startup time<1 secondGraceful shutdown time<5 seconds
+⚙️ Configuration Options
+<img width="384" height="75" alt="image" src="https://github.com/user-attachments/assets/97e1f717-453e-4793-bd1c-73f55fb8dee8" />
 
-🎯 Future Enhancements
+🔧 Troubleshooting
+MongoDB Connection Issues
+# Check MongoDB is running
+mongo --eval "db.version()"
 
- Web UI dashboard
+# Verify connection string in .env
+MONGODB_URI=mongodb://localhost:27017/queuectl
+
+Workers Not Processing Jobs
+# Check worker status
+node bin/queuectl.js status
+
+# View worker logs
+# Workers log to console - check terminal output
+
+# Release stale jobs manually
+# Workers automatically release jobs locked >10 minutes
+
+
+Jobs Stuck in Processing
+
+Workers automatically release stale jobs after 10 minutes
+Restart workers if needed: node bin/queuectl.js worker stop then start again
+
+🎯 Design Decisions & Trade-offs
+Decisions Made
+
+1. MongoDB over SQLite: Better concurrency support and scalability
+2. Process-based Workers: Better isolation and fault tolerance than threads
+3. Polling over Push: Simpler implementation, good enough for most use cases
+4. Exponential Backoff: Prevents thundering herd on external service failures
+5. Heartbeat System: Detects dead workers and releases their jobs
+
+Trade-offs
+
+1. Polling Interval: 2-second polling balances responsiveness vs. database load
+2. No Job Priority: Keeps implementation simple, FIFO processing
+3. No Scheduled Jobs: Focus on core queue functionality
+4. File Logging: Simple console logging instead of log aggregation
+
+🚀 Future Enhancements
+
  Job priority queues
- Scheduled/delayed jobs (run_at)
- Job output logging to files
- Metrics and execution stats API
- Job timeout handling
- Job dependencies (run job B after job A)
- Webhook notifications
- Docker deployment setup
+ Scheduled/delayed job execution
+ Job output logging to database
+ Web-based monitoring dashboard
+ Webhook notifications for job completion
+ Job dependencies and workflows
+ Rate limiting per job type
 
+ 👤 Author
+Created as part of a technical assessment to demonstrate:
 
-📝 License
-MIT License - feel free to use this project for learning and production!
-
-👨‍💻 Author
-Your Name
-GitHub: @yourusername
-Email: your.email@example.com
+System design capabilities
+Clean code architecture
+Concurrency handling
+CLI development
+Database operations
 
 🙏 Acknowledgments
-Built as part of a technical assessment to demonstrate:
 
-System design skills
-Node.js expertise
-Database management
-CLI development
-Testing and documentation
-
-
-📞 Support
-If you encounter any issues:
-
-Check Troubleshooting section
-Review logs in the console
-Open an issue on GitHub
-Contact via email
-
-
-⭐ If you find this useful, please star the repository!
+Built with Node.js, MongoDB, and Commander.js
+Inspired by production queue systems like Sidekiq and Bull
